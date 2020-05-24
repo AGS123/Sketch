@@ -156,6 +156,6 @@ extension UIImage {
         let diffB = abs(Int(base.b) - Int(target.b))
         let diffA = abs(Int(base.a) - Int(target.a))
 
-        return diffR + diffG + diffB + diffA > 30
+        return diffR + diffG + diffB + diffA > 180 // 30
     }
 }

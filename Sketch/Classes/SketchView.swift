@@ -27,9 +27,10 @@ public enum ImageRenderingMode {
     case original
 }
 
-@objc public protocol SketchViewDelegate: NSObjectProtocol  {
-    @objc optional func drawView(_ view: SketchView, willBeginDrawUsingTool tool: AnyObject)
-    @objc optional func drawView(_ view: SketchView, didEndDrawUsingTool tool: AnyObject)
+public protocol SketchViewDelegate: class  {
+    func drawView(_ view: SketchView, willBeginDrawingUsingTool tool: SketchTool, position point: CGPoint)
+    func drawView(_ view: SketchView, didContinueDrawingUsingTool tool: SketchTool, position point: CGPoint)
+    func drawView(_ view: SketchView, didEndDrawingUsingTool tool: SketchTool)
 }
 
 public class SketchView: UIView {
@@ -91,7 +92,9 @@ public class SketchView: UIView {
                 }
                 break
             case .scale:
-                (backgroundImage?.copy() as! UIImage).draw(in: self.bounds)
+                if let backgroundImage = backgroundImage  {
+                    (backgroundImage.copy() as! UIImage).draw(in: self.bounds)
+                }
                 break
             }
 
@@ -109,7 +112,6 @@ public class SketchView: UIView {
             }
             currentTool?.draw()
         }
-
         image = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
     }
@@ -163,7 +165,9 @@ public class SketchView: UIView {
         currentTool?.lineColor = lineColor
         currentTool?.lineAlpha = lineAlpha
 
-        sketchViewDelegate?.drawView?(self, willBeginDrawUsingTool: currentTool! as AnyObject)
+        if let tool = currentTool, let point = currentPoint {
+            sketchViewDelegate?.drawView(self, willBeginDrawingUsingTool: tool, position: point)
+        }
         
         switch currentTool! {
         case is PenTool:
@@ -198,6 +202,10 @@ public class SketchView: UIView {
             currentTool?.moveFromPoint(previousPoint1!, toPoint: currentPoint!)
             setNeedsDisplay()
         }
+        
+        if let tool = currentTool, let point = currentPoint {
+            sketchViewDelegate?.drawView(self, didContinueDrawingUsingTool: tool, position: point)
+        }
     }
 
     public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -208,7 +216,9 @@ public class SketchView: UIView {
     fileprivate func finishDrawing() {
         updateCacheImage(false)
         bufferArray.removeAllObjects()
-        sketchViewDelegate?.drawView?(self, didEndDrawUsingTool: currentTool! as AnyObject)
+        if let tool = currentTool {
+            sketchViewDelegate?.drawView(self, didEndDrawingUsingTool: tool)
+        }
         currentTool = nil
     }
 
@@ -276,5 +286,11 @@ public class SketchView: UIView {
 
     public func canRedo() -> Bool {
         return bufferArray.count > 0
+    }
+}
+
+public extension SketchView {
+    func saveImage() -> UIImage? {
+        return image
     }
 }

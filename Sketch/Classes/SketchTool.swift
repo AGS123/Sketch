@@ -8,7 +8,7 @@
 
 import UIKit
 
-protocol SketchTool {
+public protocol SketchTool {
     var lineWidth: CGFloat { get set }
     var lineColor: UIColor { get set }
     var lineAlpha: CGFloat { get set }
@@ -145,7 +145,7 @@ class LineTool: SketchTool {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         
         ctx.setStrokeColor(lineColor.cgColor)
-        ctx.setLineCap(.square)
+        ctx.setLineCap(.round)
         ctx.setLineWidth(lineWidth)
         ctx.setAlpha(lineAlpha)
         ctx.move(to: CGPoint(x: firstPoint.x, y: firstPoint.y))
@@ -450,5 +450,11 @@ class FillTool: SketchTool {
                                       width: CGFloat(context.width) / UIScreen.main.scale,
                                       height: CGFloat(context.height) / UIScreen.main.scale))
         }
+    }
+}
+
+public extension SketchTool {
+    var isFillTool: Bool {
+        return (self as? FillTool) != nil
     }
 }
