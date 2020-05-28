@@ -34,6 +34,7 @@ public protocol SketchViewDelegate: class  {
 }
 
 public class SketchView: UIView {
+    public var lineSnapping = CGFloat(30)
     public var lineColor = UIColor.black
     public var lineWidth = CGFloat(10)
     public var lineAlpha = CGFloat(1)
@@ -50,6 +51,7 @@ public class SketchView: UIView {
     private var image: UIImage?
     private var backgroundImage: UIImage?
     private var drawMode: ImageRenderingMode = .original
+    private var touchesEnded = false
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -165,6 +167,11 @@ public class SketchView: UIView {
         currentTool?.lineColor = lineColor
         currentTool?.lineAlpha = lineAlpha
 
+        if let point = snappingPoint() {
+            previousPoint1 = point
+            currentPoint = point
+        }
+        
         if let tool = currentTool, let point = currentPoint {
             sketchViewDelegate?.drawView(self, willBeginDrawingUsingTool: tool, position: point)
         }
@@ -194,9 +201,13 @@ public class SketchView: UIView {
         previousPoint1 = touch.previousLocation(in: self)
         currentPoint = touch.location(in: self)
 
+        if touchesEnded, let point = snappingPoint() {
+            previousPoint1 = point
+            currentPoint = point
+        }
+        
         if let penTool = currentTool as? PenTool {
             let renderingBox = penTool.createBezierRenderingBox(previousPoint2!, widhPreviousPoint: previousPoint1!, withCurrentPoint: currentPoint!)
-
             setNeedsDisplay(renderingBox)
         } else {
             currentTool?.moveFromPoint(previousPoint1!, toPoint: currentPoint!)
@@ -209,7 +220,9 @@ public class SketchView: UIView {
     }
 
     public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        touchesEnded = true
         touchesMoved(touches, with: event)
+        touchesEnded = false
         finishDrawing()
     }
 
@@ -287,10 +300,37 @@ public class SketchView: UIView {
     public func canRedo() -> Bool {
         return bufferArray.count > 0
     }
+    
+    public func saveImage() -> UIImage? {
+        return image
+    }
+    
+    private func snappingPoint() -> CGPoint? {
+        if let _ = currentTool as? LineTool, let point = currentPoint {
+            for path in pathArray {
+                if let tool = path as? LineTool {
+                    if point.distance(tool.firstPoint) <= lineSnapping {
+                        return tool.firstPoint
+                    } else if point.distance(tool.lastPoint) <= lineSnapping {
+                        return tool.lastPoint
+                    }
+                }
+            }
+        }
+        return nil
+    }
 }
 
-public extension SketchView {
-    func saveImage() -> UIImage? {
-        return image
+func CGPointDistanceSquared(from: CGPoint, to: CGPoint) -> CGFloat {
+    return (from.x - to.x) * (from.x - to.x) + (from.y - to.y) * (from.y - to.y)
+}
+
+func CGPointDistance(from: CGPoint, to: CGPoint) -> CGFloat {
+    return sqrt(CGPointDistanceSquared(from: from, to: to))
+}
+
+extension CGPoint {
+    func distance(_ point: CGPoint) -> CGFloat {
+        return CGPointDistance(from: self, to: point)
     }
 }
