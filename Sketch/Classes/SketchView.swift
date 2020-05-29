@@ -34,7 +34,7 @@ public protocol SketchViewDelegate: class  {
 }
 
 public class SketchView: UIView {
-    public var lineSnapping = CGFloat(30)
+    public var lineSnapping = CGFloat(8)
     public var lineColor = UIColor.black
     public var lineWidth = CGFloat(10)
     public var lineAlpha = CGFloat(1)
@@ -306,9 +306,12 @@ public class SketchView: UIView {
     }
     
     private func snappingPoint() -> CGPoint? {
-        if let _ = currentTool as? LineTool, let point = currentPoint {
+        if let currentTool = currentTool as? LineTool, let point = currentPoint {
             for path in pathArray {
                 if let tool = path as? LineTool {
+                    guard tool != currentTool else {
+                        return nil
+                    }
                     if point.distance(tool.firstPoint) <= lineSnapping {
                         return tool.firstPoint
                     } else if point.distance(tool.lastPoint) <= lineSnapping {

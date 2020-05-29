@@ -118,14 +118,20 @@ class EraserTool: PenTool {
     }
 }
 
-class LineTool: SketchTool {
+class LineTool: SketchTool, Equatable {
+    let id: UUID
     var lineWidth: CGFloat
     var lineColor: UIColor
     var lineAlpha: CGFloat
     var firstPoint: CGPoint
     var lastPoint: CGPoint
 
+    static func == (lhs: LineTool, rhs: LineTool) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
     init() {
+        id = UUID()
         lineWidth = 1.0
         lineAlpha = 1.0
         lineColor = .blue
